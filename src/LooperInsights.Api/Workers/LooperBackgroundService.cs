@@ -31,16 +31,13 @@ public sealed class LooperBackgroundService(
                     var sectionLabel = $"section_{section}";
                     logger.LogDebug("Batch {BatchNumber} — Section {Section} starting.", batchNumber, section);
 
-                    var sectionTimer = Stopwatch.StartNew();
+                    metrics.ActiveSectionsByType.WithLabels(sectionLabel).Inc();
                     await SimulateSectionWorkAsync(batchNumber, section, stoppingToken);
-                    sectionTimer.Stop();
-
-                    metrics.SectionsTotal.WithLabels(sectionLabel).Inc();
-                    metrics.SectionDurationSeconds.WithLabels(sectionLabel).Observe(sectionTimer.Elapsed.TotalSeconds);
+                    metrics.ActiveSectionsByType.WithLabels(sectionLabel).Dec();
 
                     logger.LogDebug(
-                        "Batch {BatchNumber} — Section {Section} done in {ElapsedMs}ms.",
-                        batchNumber, section, sectionTimer.ElapsedMilliseconds);
+                        "Batch {BatchNumber} — Section {Section} done.",
+                        batchNumber, section);
                 }
 
                 batchTimer.Stop();
@@ -57,9 +54,7 @@ public sealed class LooperBackgroundService(
             }
             catch (Exception ex)
             {
-                metrics.BatchesFailedTotal.Inc();
                 logger.LogError(ex, "Batch {BatchNumber} failed.", batchNumber);
-                // Brief back-off before retrying to avoid tight error loops
                 await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
             }
             finally
@@ -73,7 +68,6 @@ public sealed class LooperBackgroundService(
 
     private static async Task SimulateSectionWorkAsync(long batch, int section, CancellationToken ct)
     {
-        // Simulate variable work per section: section N takes ~N * 50 ms
         var delay = TimeSpan.FromMilliseconds(section * 50 + Random.Shared.Next(0, 30));
         await Task.Delay(delay, ct);
     }
