@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+    <File Path=".gitignore" />
+    <File Path="Dockerfile" />
+  </Folder>
+  <Project Path="src\LooperInsights.Api\LooperInsights.Api.csproj" Type="C#" />
+</Solution>
