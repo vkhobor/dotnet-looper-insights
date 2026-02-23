@@ -12,6 +12,5 @@ var app = builder.Build();
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }));
 
 app.UseMetricServer();
-app.UseHttpMetrics();
 
 app.Run();
