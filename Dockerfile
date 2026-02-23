@@ -8,9 +8,9 @@ COPY src/LooperInsights.Api/ LooperInsights.Api/
 RUN dotnet publish LooperInsights.Api/LooperInsights.Api.csproj \
     -c Release \
     -o /app/publish \
-    --no-restore
+    --self-contained true 
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0 AS runtime
 WORKDIR /app
 
 COPY --from=build /app/publish .
@@ -18,4 +18,4 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "LooperInsights.Api.dll"]
+ENTRYPOINT ["./LooperInsights.Api"]
