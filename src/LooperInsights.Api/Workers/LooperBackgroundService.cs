@@ -32,8 +32,11 @@ public sealed class LooperBackgroundService(
                     logger.LogDebug("Batch {BatchNumber} — Section {Section} starting.", batchNumber, section);
 
                     metrics.ActiveSectionsByType.WithLabels(sectionLabel).Inc();
+                    var sectionTimer = Stopwatch.StartNew();
                     await SimulateSectionWorkAsync(batchNumber, section, stoppingToken);
+                    sectionTimer.Stop();
                     metrics.ActiveSectionsByType.WithLabels(sectionLabel).Dec();
+                    metrics.SectionDurationSeconds.WithLabels(sectionLabel).Observe(sectionTimer.Elapsed.TotalSeconds);
 
                     logger.LogDebug(
                         "Batch {BatchNumber} — Section {Section} done.",

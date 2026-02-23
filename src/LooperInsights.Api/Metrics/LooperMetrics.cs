@@ -24,4 +24,13 @@ public sealed class LooperMetrics
         "looper_active_sections_by_type",
         "Number of active sections by type.",
         new GaugeConfiguration { LabelNames = ["section"] });
+
+    public readonly Histogram SectionDurationSeconds = Prometheus.Metrics.CreateHistogram(
+        "looper_section_duration_seconds",
+        "Duration of each batch section in seconds.",
+        new HistogramConfiguration
+        {
+            LabelNames = ["section"],
+            Buckets = Histogram.LinearBuckets(start: 0.025, width: 0.025, count: 20)
+        });
 }
