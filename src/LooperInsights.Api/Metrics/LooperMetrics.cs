@@ -33,4 +33,8 @@ public sealed class LooperMetrics
             LabelNames = ["section"],
             Buckets = Histogram.LinearBuckets(start: 0.025, width: 0.025, count: 20)
         });
+
+    public readonly Counter ItemsProcessedTotal = Prometheus.Metrics.CreateCounter(
+        "looper_items_processed_total",
+        "Total number of items processed across all sections.");
 }

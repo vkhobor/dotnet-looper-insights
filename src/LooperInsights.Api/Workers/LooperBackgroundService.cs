@@ -18,6 +18,7 @@ public sealed class LooperBackgroundService(
         while (!stoppingToken.IsCancellationRequested)
         {
             batchNumber++;
+            var itemCount = Random.Shared.Next(1, 101); // 1-100 items per batch (same for all sections)
             logger.LogInformation("Batch {BatchNumber} starting.", batchNumber);
             metrics.ActiveBatches.Inc();
             var batchTimer = Stopwatch.StartNew();
@@ -33,7 +34,7 @@ public sealed class LooperBackgroundService(
 
                     metrics.ActiveSectionsByType.WithLabels(sectionLabel).Inc();
                     var sectionTimer = Stopwatch.StartNew();
-                    await SimulateSectionWorkAsync(batchNumber, section, stoppingToken);
+                    await SimulateSectionWorkAsync(batchNumber, section, itemCount, stoppingToken);
                     sectionTimer.Stop();
                     metrics.ActiveSectionsByType.WithLabels(sectionLabel).Dec();
                     metrics.SectionDurationSeconds.WithLabels(sectionLabel).Observe(sectionTimer.Elapsed.TotalSeconds);
@@ -46,6 +47,7 @@ public sealed class LooperBackgroundService(
                 batchTimer.Stop();
                 metrics.BatchesTotal.Inc();
                 metrics.BatchDurationSeconds.Observe(batchTimer.Elapsed.TotalSeconds);
+                metrics.ItemsProcessedTotal.Inc(itemCount);
                 logger.LogInformation(
                     "Batch {BatchNumber} completed in {ElapsedMs}ms.",
                     batchNumber, batchTimer.ElapsedMilliseconds);
@@ -64,14 +66,28 @@ public sealed class LooperBackgroundService(
             {
                 metrics.ActiveBatches.Dec();
             }
+
+            // Simulate longer wait between batches sometimes (no work available)
+            if (Random.Shared.NextDouble() < 0.3) // 30% chance of longer wait
+            {
+                var noWorkDelay = TimeSpan.FromMilliseconds(Random.Shared.Next(500, 2000));
+                logger.LogDebug("No work available, waiting {DelayMs}ms before next batch.", noWorkDelay.TotalMilliseconds);
+                await Task.Delay(noWorkDelay, stoppingToken);
+            }
         }
 
         logger.LogInformation("LooperBackgroundService stopped.");
     }
 
-    private static async Task SimulateSectionWorkAsync(long batch, int section, CancellationToken ct)
+    private async Task SimulateSectionWorkAsync(long batch, int section, int itemCount, CancellationToken ct)
     {
-        var delay = TimeSpan.FromMilliseconds(section * 50 + Random.Shared.Next(0, 30));
-        await Task.Delay(delay, ct);
+        for (int item = 1; item <= itemCount; item++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            // Simulate processing each work item
+            var itemDelay = TimeSpan.FromMilliseconds(section * 20 + Random.Shared.Next(10, 50));
+            await Task.Delay(itemDelay, ct);
+        }
     }
 }
